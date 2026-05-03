@@ -2,6 +2,7 @@ import ollama from "ollama";
 import { tools, executeTool } from "./tools/index.js";
 import readline from "readline";
 import { config } from "dotenv";
+import logger from "./utils/logger.js";
 
 config();
 
@@ -71,4 +72,7 @@ const ask = () =>
     ask();
   });
 
+logger.info(
+  "Welcome to the Smart CLI Agent! Ask me anything, or type /bye to exit. \n",
+);
 ask();
