@@ -1,0 +1,21 @@
+{
+  "name": "ask",
+  "version": "1.0.0",
+  "description": "A command-line AI agent that takes your question, reasons about which tool to use, executes it, and returns a clean answer all in one command.",
+  "keywords": [
+    "agent",
+    "ollama-agent"
+  ],
+  "license": "MIT",
+  "author": "mahmoudshahin",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "ollama": "^0.6.3",
+    "readline": "^1.3.0"
+  }
+}
