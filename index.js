@@ -1,79 +1,74 @@
-const fs = require("fs");
-const path = require("path");
+import ollama from "ollama";
+import { tools, executeTool } from "./tools/index.js";
+import readline from "readline";
+import { config } from "dotenv";
 
-function loadEnv(envPath) {
-	if (!fs.existsSync(envPath)) {
-		return;
-	}
+config();
 
-	const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
-	for (const rawLine of lines) {
-		const line = rawLine.trim();
-		if (!line || line.startsWith("#")) {
-			continue;
-		}
+const MODEL = process.env.OLLAMA_MODEL || "llama3.1";
 
-		const separatorIndex = line.indexOf("=");
-		if (separatorIndex < 0) {
-			continue;
-		}
+const SYSTEM_PROMPT =
+  "You are a helpful assistant that can use tools to answer questions." +
+  " don't make up tool calls, only call a tool if you need information to answer the user's question." +
+  " Always use the tools when needed, don't try to answer questions you don't have enough information for." +
+  " The tools you have access to are:" +
+  "calculator: Evaluate a math expression. Use for any arithmetic." +
+  "datetime: Get the current date and time." +
+  "When you call a tool, provide only the necessary information as arguments. For example, if you want to get the current date and time, you would call the datetime tool without any arguments." +
+  "If you need to do a calculation, use the calculator tool with the expression as an argument. For example, if you want to calculate 2 + 2, you would call the calculator tool with the expression '2 + 2'." +
+  "Answer the user's question as best as you can using the tools when necessary.";
 
-		const key = line.slice(0, separatorIndex).trim();
-		const value = line.slice(separatorIndex + 1).trim();
+async function runAgent(userMessage) {
+  const messages = [
+    {
+      role: "system",
+      content: SYSTEM_PROMPT,
+    },
+    { role: "user", content: userMessage },
+  ];
 
-		if (!process.env[key]) {
-			process.env[key] = value;
-		}
-	}
+  while (true) {
+    const response = await ollama.chat({
+      model: MODEL,
+      messages,
+      tools,
+    });
+
+    const message = response.message;
+
+    if (!message.tool_calls || message.tool_calls.length === 0) {
+      console.log(`Agent: ${message.content}\n`);
+      break;
+    }
+
+    messages.push(message);
+
+    for (const toolCall of message.tool_calls) {
+      const { name, arguments: args } = toolCall.function;
+      console.log(`→ Using tool: ${name}`);
+
+      const result = await executeTool(name, args);
+
+      messages.push({
+        role: "tool",
+        content: String(result),
+      });
+    }
+  }
 }
 
-async function askOllama(prompt) {
-	const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-	const model = process.env.OLLAMA_MODEL || "llama3.1";
-	const endpoint = `${baseUrl.replace(/\/$/, "")}/api/chat`;
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+const ask = () =>
+  rl.question("You: ", async (input) => {
+    if (input.toLowerCase() === "/bye") {
+      rl.close();
+      return;
+    }
+    await runAgent(input);
+    ask();
+  });
 
-	const response = await fetch(endpoint, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model,
-			stream: false,
-			messages: [
-				{
-					role: "user",
-					content: prompt,
-				},
-			],
-		}),
-	});
-
-	if (!response.ok) {
-		const body = await response.text();
-		throw new Error(`Ollama API error (${response.status}): ${body}`);
-	}
-
-	const data = await response.json();
-	return data?.message?.content || "";
-}
-
-async function main() {
-	loadEnv(path.join(process.cwd(), ".env"));
-
-	const prompt = process.argv.slice(2).join(" ").trim();
-	if (!prompt) {
-		console.log("Usage: node index.js \"your prompt\"");
-		process.exit(1);
-	}
-
-	try {
-		const output = await askOllama(prompt);
-		console.log(output);
-	} catch (error) {
-		console.error(error.message);
-		process.exit(1);
-	}
-}
-
-main();
+ask();
