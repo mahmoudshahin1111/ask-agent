@@ -1,7 +1,6 @@
-# Smart CLI Agent
+# ASK - Smart CLI Agent
 
 A lightweight JavaScript CLI agent project scaffold.
-
 This project is configured to use a local Ollama API endpoint.
 
 ## Project Structure
