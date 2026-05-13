@@ -1,56 +1,69 @@
 # ASK - Smart CLI Agent
 
-A lightweight JavaScript CLI agent project scaffold.
-This project is configured to use a local Ollama API endpoint.
-
-## Project Structure
-
-- `index.js` - Main CLI entry point
-- `tools/calculator.js` - Basic math helper functions
-- `tools/search.js` - Array/string search helper
-- `tools/datetime.js` - Date/time helper functions
-- `.env` - Environment configuration
+A function-first CLI AI agent powered by Ollama.
+The agent is configured to use calculator tools for arithmetic requests.
 
 ## Prerequisites
 
 - Node.js 18+
+- Docker Desktop (or compatible Docker engine)
+
+## Environment
+
+Create a .env file in the project root with at least:
+
+- OLLAMA_MODEL=llama3.1
+- LOG_LEVEL=info
+
+Note: The app defaults to llama3.1 if OLLAMA_MODEL is not set.
 
 ## Setup
 
-1. Install dependencies (if/when package.json is added):
-   ```bash
-   npm install
-   ```
-2. Configure environment variables in `.env`:
-   - `NODE_ENV`
-   - `OLLAMA_BASE_URL`
-   - `OLLAMA_MODEL`
+1. Install dependencies:
 
-## Local Ollama Setup
+```bash
+npm install
+```
 
-1. Install Ollama and run it locally.
-2. Pull a model (example):
-   ```bash
-   ollama pull llama3.1
-   ```
-3. Ensure Ollama is running on `http://localhost:11434`.
+2. Start Docker services:
+
+```bash
+docker compose up -d
+```
+
+3. Verify Ollama API is reachable:
+
+```bash
+curl http://localhost:11434/api/tags
+```
 
 ## Run
 
-Use Node.js to run the app entry file:
+Start the CLI agent:
 
 ```bash
-node index.js
+npm run start
 ```
 
-Example prompt:
+Exit with:
 
-```bash
-node index.js "Explain what this CLI project does"
+```text
+/bye
 ```
+
+## Tool Behavior
+
+The agent can call only these calculator tools for arithmetic:
+
+- add(a, b): for plus and sum requests, example 2+3
+- subtract(a, b): for minus and difference requests, example 9-4
+- multiply(a, b): for times and product requests, example 6*7
+- divide(a, b): for divide and quotient requests, example 8/2
+
+If input is unclear, the agent asks a clarification question.
+Division by zero is handled by the divide tool and returns an error message.
 
 ## Notes
 
-- Keep secrets in `.env` and avoid committing real API keys.
-- Expand `index.js` to route commands to modules inside `tools/`.
-- For docker make sure you have a big memory more than 8 GBs.
+- Do not commit real secrets.
+- Keep tool contracts in src/tools/index.js aligned with src/tools/calculator.js.

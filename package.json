@@ -1,6 +1,7 @@
 {
-  "name": "ask",
+  "name": "ask-agent",
   "version": "1.0.0",
+  "private": true,
   "description": "A command-line AI agent that takes your question, reasons about which tool to use, executes it, and returns a clean answer all in one command.",
   "keywords": [
     "agent",
@@ -8,10 +9,14 @@
   ],
   "license": "MIT",
   "author": "mahmoudshahin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mahmoudshahin1111/ask-agent.git"
+  },
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node ./src/index.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
