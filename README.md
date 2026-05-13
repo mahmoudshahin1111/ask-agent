@@ -60,6 +60,16 @@ Exit with:
 /bye
 ```
 
+## Testing
+
+Tests are written with [Vitest](https://vitest.dev/). Test files live in the same folder for every file
+
+Run all tests:
+
+```bash
+npm test
+```
+
 ## Notes
 
 - Do not commit real secrets.
