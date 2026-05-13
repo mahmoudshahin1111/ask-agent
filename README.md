@@ -3,6 +3,8 @@
 A function-first CLI AI agent powered by Ollama.
 The agent is configured to use calculator tools for arithmetic requests.
 
+<img width="831" height="156" alt="2026-05-14_0-00-47" src="https://github.com/user-attachments/assets/ff7c223a-4896-4a4a-b86f-321f4734fa36" />
+
 ## Prerequisites
 
 - Node.js 18+
