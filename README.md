@@ -53,3 +53,4 @@ node index.js "Explain what this CLI project does"
 
 - Keep secrets in `.env` and avoid committing real API keys.
 - Expand `index.js` to route commands to modules inside `tools/`.
+- For docker make sure you have a big memory more than 8 GBs.

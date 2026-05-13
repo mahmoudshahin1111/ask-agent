@@ -9,6 +9,10 @@ node_modules/
 npm-debug.log*
 logs/
 
+# Ollama local data
+.ollama/
+ollama_data/
+
 # OS
 .DS_Store
 Thumbs.db
