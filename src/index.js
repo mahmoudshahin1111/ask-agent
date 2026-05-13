@@ -115,6 +115,6 @@ const ask = () =>
 
 print(
   "system",
-  "Welcome to the Smart CLI Agent! Ask me anything, or type /bye to exit. \n",
+  "Welcome to Ask Agent, your function-first calculator assistant, let's get started or type /bye to exit. \n",
 );
 ask();

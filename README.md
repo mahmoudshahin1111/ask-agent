@@ -51,18 +51,6 @@ Exit with:
 /bye
 ```
 
-## Tool Behavior
-
-The agent can call only these calculator tools for arithmetic:
-
-- add(a, b): for plus and sum requests, example 2+3
-- subtract(a, b): for minus and difference requests, example 9-4
-- multiply(a, b): for times and product requests, example 6*7
-- divide(a, b): for divide and quotient requests, example 8/2
-
-If input is unclear, the agent asks a clarification question.
-Division by zero is handled by the divide tool and returns an error message.
-
 ## Notes
 
 - Do not commit real secrets.
