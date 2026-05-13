@@ -1,6 +1,8 @@
 import { add, divide, multiply, subtract } from "./calculator.js";
+import { getCurrentTime } from "./datetime.js";
 
  const tools = [
+  // calculator tools
   {
     name: "add",
     description:
@@ -53,6 +55,17 @@ import { add, divide, multiply, subtract } from "./calculator.js";
       required: ["a", "b"],
     },
   },
+  // datetime tool
+  {
+    name: "get_current_time",
+    description:
+      "Return the current local time. Call this when the user asks what time it is, for example: 'what time is it?', 'current time', or 'tell me the time'.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
 ];
 
  async function executeTool(name, input) {
@@ -85,6 +98,14 @@ import { add, divide, multiply, subtract } from "./calculator.js";
       return divide(input.a, input.b);
     } catch {
       return "Invalid input";
+    }
+  }
+
+  if (name === "get_current_time") {
+    try {
+      return getCurrentTime();
+    } catch {
+      return "Could not retrieve current time";
     }
   }
 
