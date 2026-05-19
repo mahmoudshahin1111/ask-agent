@@ -21,6 +21,7 @@ Create a .env file in the project root with at least:
 - DEBUG=true
 - OLLAMA_MODEL=llama3.1
 - LOG_LEVEL=info
+- TAVILY_API_KEY=your_tavily_api_key | required to enable the web search tool. Obtain a key at [app.tavily.com](https://app.tavily.com).
 
 Note: The app defaults to llama3.1 if OLLAMA_MODEL is not set.
 

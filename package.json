@@ -20,6 +20,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@tavily/core": "^0.7.3",
     "dotenv": "^17.4.2",
     "ollama": "^0.6.3",
     "pino": "^10.3.1",
