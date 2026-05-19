@@ -1,7 +1,9 @@
 import pino from "pino";
 import { mkdirSync } from "fs";
 import { join } from "path";
+import { config } from "dotenv";
 
+config();
 const LOG_DIR = join(process.cwd(), "logs");
 mkdirSync(LOG_DIR, { recursive: true });
 
@@ -16,4 +18,4 @@ if (process.env.DEBUG === "true") {
 
 const logger = pino({ level: "debug" }, pino.multistream(streams));
 
-export default logger;
+export { logger };
