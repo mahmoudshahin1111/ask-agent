@@ -1,5 +1,6 @@
 import { add, divide, multiply, subtract } from "./calculator.js";
 import { getCurrentTime } from "./datetime.js";
+import { search } from "./search.js";
 
  const tools = [
   // calculator tools
@@ -66,6 +67,19 @@ import { getCurrentTime } from "./datetime.js";
       required: [],
     },
   },
+  // search tool
+  {
+    name: "search",
+    description:
+      "Search the web using Tavily. Call this when the user wants to search for information, for example: 'search for JavaScript tutorials', 'find information on climate change', or 'look up the latest news'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query" },
+      },
+      required: ["query"],
+    },
+  },
 ];
 
  async function executeTool(name, input) {
@@ -106,6 +120,14 @@ import { getCurrentTime } from "./datetime.js";
       return getCurrentTime();
     } catch {
       return "Could not retrieve current time";
+    }
+  }
+
+  if (name === "search") {
+    try {
+      return await search(input.query);
+    } catch {
+      return "Could not perform search";
     }
   }
 

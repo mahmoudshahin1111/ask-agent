@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { tools, executeTool } from "./index.js";
 
+vi.mock("./search.js", () => ({ search: vi.fn() }));
+
+import { tools, executeTool } from "./index.js";
+import { search } from "./search.js";
 
 describe("tools registry", () => {
   const toolNames = tools.map((t) => t.name);
@@ -22,7 +25,7 @@ describe("tools registry", () => {
   });
 
   it("calculator tools require a and b", () => {
-    const calculatorTools = tools.filter((t) => t.name !== "get_current_time");
+    const calculatorTools = tools.filter((t) => t.name === "calculator");
     for (const tool of calculatorTools) {
       expect(tool.input_schema.required).toContain("a");
       expect(tool.input_schema.required).toContain("b");
@@ -32,6 +35,13 @@ describe("tools registry", () => {
   it("get_current_time requires no inputs", () => {
     const timeTool = tools.find((t) => t.name === "get_current_time");
     expect(timeTool.input_schema.required).toHaveLength(0);
+  });
+
+  it("search tool has correct description and input schema", () => {
+    const searchTool = tools.find((t) => t.name === "search");
+    expect(searchTool).toBeDefined();
+    expect(searchTool.description).toContain("Search the web using Tavily.");
+    expect(searchTool.input_schema.required).toContain("query");
   });
 });
 
@@ -81,8 +91,22 @@ describe("executeTool", () => {
       const fixedDate = new Date("2026-05-14T12:00:00");
       vi.setSystemTime(fixedDate);
       expect(await executeTool("get_current_time", {})).toBe(
-        fixedDate.toLocaleTimeString()
+        fixedDate.toLocaleTimeString(),
       );
+    });
+  });
+
+  describe("search", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      search.mockResolvedValue("search results");
+    });
+
+    it("calls the search function with the query input", async () => {
+      const input = { query: "test query" };
+      const result = await executeTool("search", input);
+      expect(search).toHaveBeenCalledWith("test query");
+      expect(result).toBe("search results");
     });
   });
 

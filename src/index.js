@@ -17,6 +17,7 @@ Available tools:
 - multiply: times (*, x), multiply, product
 - divide: divide (/), quotient
 - get_current_time: current time, what time is it
+- search: search the web for relevant information
 
 Rules:
 1. Always call the appropriate tool instead of answering directly.
@@ -28,6 +29,8 @@ Rules:
 7. If inputs are missing or unclear, ask a short clarification question instead of guessing.
 8. If division by zero is requested, call divide anyway and report the tool error clearly.
 9. Keep responses concise.
+10. Always use the exact tool names when calling tools, never synonyms or variations.
+11. For the search tool, extract the query and pass it as {"query": string}.
 
 `;
 
