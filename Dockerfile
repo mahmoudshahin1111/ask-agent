@@ -11,9 +11,6 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends curl ca-certificates zstd \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
-
 COPY package*.json ./
 RUN npm ci
 
@@ -21,4 +18,4 @@ COPY . .
 
 EXPOSE 11434
 
-CMD ["sh", "-c", "ollama serve & until curl -sf http://127.0.0.1:11434/api/tags > /dev/null; do sleep 1; done; ollama pull \"$OLLAMA_MODEL\";"]
+CMD ["sh", "-c", "if [ ! -f /root/.ollama/install.sh ]; then curl -fsSL https://ollama.com/install.sh -o /root/.ollama/install.sh; fi; if ! command -v ollama > /dev/null 2>&1; then sh /root/.ollama/install.sh; fi; ollama serve & until curl -sf http://127.0.0.1:11434/api/tags > /dev/null; do sleep 1; done; ollama pull \"$OLLAMA_MODEL\";"]

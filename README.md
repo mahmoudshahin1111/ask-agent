@@ -2,8 +2,6 @@
 
 <img width="350" height="350" alt="ai_agent_tool_logo" src="https://github.com/user-attachments/assets/5fbd37e7-9551-4ae3-b018-46e3578fb667" />
 
-
-
 A function-first CLI AI agent powered by Ollama.
 The agent is configured to use calculator tools for arithmetic requests.
 
