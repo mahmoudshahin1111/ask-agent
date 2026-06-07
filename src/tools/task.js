@@ -1,0 +1,29 @@
+import { logger, print, ROLES } from "../utils/index.js";
+import { runTaskAgent} from "../utils/index.js";
+import { memory } from "../utils/index.js";
+
+const breakIntoSubtasks = (input) => {
+  memory.setGoal(input.goal);
+  memory.addSubtasks(input.subtasks);
+  print(ROLES.AGENT, `\n📋 Subtasks:`);
+  input.subtasks.forEach((t, i) => print(ROLES.AGENT, `   ${i + 1}. ${t}`));
+  return `Subtasks registered: ${input.subtasks.join(" | ")}`;
+};
+
+const executeSubtask = async (input) => {
+  print(ROLES.AGENT, `\n⚙️  Executing: ${input.subtask}`);
+  const { subtask, context } = input;
+  const response = await runTaskAgent(
+    `Complete this task concisely and clearly:\n\nTask: ${subtask}\n\nContext from previous steps: ${context || "none"}`,
+  );
+  const result = response.content[0].text;
+  memory.addResult(input.subtask, result);
+  return result;
+};
+
+const compileReport = async (input) => {
+  const report = memory.getSummary();
+  return `\n📊 Final Report:\n${report}`;
+};
+
+export { breakIntoSubtasks, executeSubtask, compileReport };
