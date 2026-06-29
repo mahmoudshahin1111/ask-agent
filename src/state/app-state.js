@@ -19,6 +19,11 @@ class AppState {
   setSelectedAgentApiKey(apiKey) {
     if (!this.selectedAgent) throw new Error("No agent selected.");
     this.selectedAgentApiKey = apiKey;
+    this.selectedAgent.apiKey = apiKey;
+  }
+
+  getSelectedAgentApiKey() {
+    return this.selectedAgentApiKey;
   }
 
   getSelectedAgent() {

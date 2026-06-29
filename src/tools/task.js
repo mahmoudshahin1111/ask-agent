@@ -16,7 +16,10 @@ const executeSubtask = async (input) => {
   const response = await runTaskAgent(
     `Complete this task concisely and clearly:\n\nTask: ${subtask}\n\nContext from previous steps: ${context || "none"}`,
   );
-  const result = response.content[0].text;
+  const result =
+    typeof response === "string"
+      ? response
+      : response?.content?.[0]?.text || String(response);
   memory.addResult(input.subtask, result);
   return result;
 };

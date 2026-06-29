@@ -1,10 +1,6 @@
-import readline from "readline";
 import { config } from "dotenv";
 import {
   print,
-  logger,
-  getColorBasedOnRole,
-  runAgent,
   memory,
   getTextWithRole,
 } from "./utils/index.js";
@@ -14,10 +10,27 @@ import { MODELS, ROLES } from "./utils/index.js";
 
 config();
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+const SPINNER_FRAMES = ["|", "/", "-", "\\"];
+const SPINNER_INTERVAL_MS = 80;
+
+const startLoadingSpinner = (message) => {
+  if (!process.stdout.isTTY) {
+    return () => {};
+  }
+
+  let frameIndex = 0;
+  process.stdout.write(`\r${SPINNER_FRAMES[frameIndex]} ${message}`);
+
+  const timer = setInterval(() => {
+    frameIndex = (frameIndex + 1) % SPINNER_FRAMES.length;
+    process.stdout.write(`\r${SPINNER_FRAMES[frameIndex]} ${message}`);
+  }, SPINNER_INTERVAL_MS);
+
+  return () => {
+    clearInterval(timer);
+    process.stdout.write("\r\x1b[K");
+  };
+};
 
 async function startChat() {
   const agent = appState.getSelectedAgent();
@@ -28,17 +41,29 @@ async function startChat() {
   );
 
   while (true) {
-    const userMessage = await input({
-      required: true,
-      message: getTextWithRole(ROLES.USER, "Your message:"),
-    });
+    const userMessage = await input(
+      {
+        required: true,
+        message: getTextWithRole(ROLES.USER, "Your message:"),
+      },
+      { clearPromptOnDone: true },
+    );
 
     if (userMessage.toLowerCase() === "exit") {
       console.log("Goodbye!");
       break;
     }
+
     memory.reset();
-    const response = await agent.run(userMessage);
+    const stopSpinner = startLoadingSpinner(`${agent.name} is thinking...`);
+    let response;
+
+    try {
+      response = await agent.run(userMessage);
+    } finally {
+      stopSpinner();
+    }
+
     print(ROLES.AGENT, response);
   }
 }
@@ -55,11 +80,14 @@ const selectAgent = async () => {
   appState.selectAgent(agentId);
 
   const agent = appState.getSelectedAgent();
-  if (!agent.apiKey) {
-    const apiKey = await input({
-      required: true,
-      message: `Enter API key for ${agent.name}:`,
-    });
+  if (agent.requiresApiKey && !appState.getSelectedAgentApiKey()) {
+    const apiKey = await input(
+      {
+        required: true,
+        message: `Enter API key for ${agent.name}:`,
+      },
+      { clearPromptOnDone: true },
+    );
     appState.setSelectedAgentApiKey(apiKey);
   }
 
