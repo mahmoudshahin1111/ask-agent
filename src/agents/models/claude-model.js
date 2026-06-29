@@ -4,7 +4,7 @@ import { logger } from "../../utils/logger.js";
 import { ROLES } from "../../utils/constants.js";
 import { parseToolArguments } from "../utils/tool-arguments.js";
 import { askToContinueAfterLimit } from "../utils/round-limit.js";
-import { executeToolWithFallback, tools } from "../../tools/index.js";
+import { executeTool, tools } from "../../tools/index.js";
 
 const DEFAULT_CLAUDE_MODEL = "claude-opus-4-8";
 
@@ -73,7 +73,7 @@ const runClaudeFlow = async (
           `Tool call: ${toolCall.name} with arguments ${JSON.stringify(args)}`,
         );
 
-        const result = await executeToolWithFallback(toolCall.name, args);
+        const result = await executeTool(toolCall.name, args);
 
         toolResults.push({
           type: "tool_result",

@@ -9,7 +9,7 @@ const PLANNING_FALLBACK_NAMES = new Set([
   "compile_report",
 ]);
 
-const executeTool = async (name, input) => {
+const executeToolByName = async (name, input) => {
   if (name?.toLowerCase() === "add") {
     try {
       return add(input.a, input.b);
@@ -85,9 +85,9 @@ const executeTool = async (name, input) => {
   return "Tool not found";
 };
 
-const executeToolWithFallback = async (toolName, args) => {
+const executeTool = async (toolName, args) => {
   const normalizedName = toolName?.toLowerCase();
-  const result = await executeTool(normalizedName, args);
+  const result = await executeToolByName(normalizedName, args);
 
   if (result !== "Tool not found") {
     return result;
@@ -97,7 +97,7 @@ const executeToolWithFallback = async (toolName, args) => {
     return result;
   }
 
-  return executeTool(`planning:${normalizedName}`, args);
+  return executeToolByName(`planning:${normalizedName}`, args);
 };
 
-export { executeTool, executeToolWithFallback };
+export { executeTool };

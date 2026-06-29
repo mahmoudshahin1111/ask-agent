@@ -4,7 +4,7 @@ import { logger } from "../../utils/logger.js";
 import { ROLES } from "../../utils/constants.js";
 import { parseToolArguments } from "../utils/tool-arguments.js";
 import { askToContinueAfterLimit } from "../utils/round-limit.js";
-import { executeToolWithFallback, tools } from "../../tools/index.js";
+import { executeTool, tools } from "../../tools/index.js";
 
 const runOllamaFlow = async (
   input,
@@ -46,7 +46,7 @@ const runOllamaFlow = async (
 
       logger.debug(`Tool call: ${name} with arguments ${JSON.stringify(args)}`);
 
-      const result = await executeToolWithFallback(name, args);
+      const result = await executeTool(name, args);
 
       messages.push({
         role: ROLES.TOOL,
