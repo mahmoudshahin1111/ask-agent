@@ -1,4 +1,4 @@
-export { executeTool } from "./execute-tool.js";
+export { executeTool, executeToolWithFallback } from "./execute-tool.js";
 export { tools } from "./tools.js";
 export { search } from "./search.js";
 export { add, subtract, multiply, divide } from "./calculator.js";

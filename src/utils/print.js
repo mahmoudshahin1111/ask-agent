@@ -61,9 +61,20 @@ const startLoadingSpinner = (message) => {
   };
 };
 
+const executeOperation = async (message, operation) => {
+  const stopSpinner = startLoadingSpinner(message);
+
+  try {
+    return await operation();
+  } finally {
+    stopSpinner();
+  }
+};
+
 export {
   print,
   getColorBasedOnRole,
   getTextWithRole,
   startLoadingSpinner,
+  executeOperation,
 };

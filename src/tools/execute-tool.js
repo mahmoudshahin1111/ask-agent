@@ -3,6 +3,12 @@ import { getCurrentTime } from "./datetime.js";
 import { search } from "./search.js";
 import { breakIntoSubtasks, compileReport, executeSubtask } from "./task.js";
 
+const PLANNING_FALLBACK_NAMES = new Set([
+  "break_into_subtasks",
+  "execute_subtask",
+  "compile_report",
+]);
+
 const executeTool = async (name, input) => {
   if (name?.toLowerCase() === "add") {
     try {
@@ -79,4 +85,19 @@ const executeTool = async (name, input) => {
   return "Tool not found";
 };
 
-export { executeTool };
+const executeToolWithFallback = async (toolName, args) => {
+  const normalizedName = toolName?.toLowerCase();
+  const result = await executeTool(normalizedName, args);
+
+  if (result !== "Tool not found") {
+    return result;
+  }
+
+  if (!PLANNING_FALLBACK_NAMES.has(normalizedName)) {
+    return result;
+  }
+
+  return executeTool(`planning:${normalizedName}`, args);
+};
+
+export { executeTool, executeToolWithFallback };
