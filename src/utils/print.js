@@ -15,6 +15,22 @@ const print = (role, content) => {
   console.log(`${getColorBasedOnRole(role, roleLabel)}: ${content}\n`);
 };
 
+const getTextWithRole = (role, content) => {
+  let roleLabel = "";
+  if (role === ROLES.USER) {
+    roleLabel = "User";
+  } else if (role === ROLES.AGENT) {
+    roleLabel = "Agent";
+  } else if (role === ROLES.TOOL) {
+    roleLabel = "Tool Call";
+  } else if (role === ROLES.SYSTEM) {
+    roleLabel = "System";
+  } else {
+    roleLabel = "Unknown";
+  }
+  return `${getColorBasedOnRole(role, roleLabel)}: ${content}`;
+};
+
 const getColorBasedOnRole = (role, content) => {
   const colors = {
     red: "\x1b[31m",
@@ -39,5 +55,6 @@ const getColorBasedOnRole = (role, content) => {
 
 export  {
     print,
-    getColorBasedOnRole
+    getColorBasedOnRole,
+    getTextWithRole
 }

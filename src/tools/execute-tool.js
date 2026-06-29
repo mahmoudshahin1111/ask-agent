@@ -4,7 +4,7 @@ import { search } from "./search.js";
 import { breakIntoSubtasks, compileReport, executeSubtask } from "./task.js";
 
 const executeTool = async (name, input) => {
-  if (name === "add") {
+  if (name?.toLowerCase() === "add") {
     try {
       return add(input.a, input.b);
     } catch {
@@ -12,7 +12,7 @@ const executeTool = async (name, input) => {
     }
   }
 
-  if (name === "subtract") {
+  if (name?.toLowerCase() === "subtract") {
     try {
       return subtract(input.a, input.b);
     } catch {
@@ -20,7 +20,7 @@ const executeTool = async (name, input) => {
     }
   }
 
-  if (name === "multiply") {
+  if (name?.toLowerCase() === "multiply") {
     try {
       return multiply(input.a, input.b);
     } catch {
@@ -28,7 +28,7 @@ const executeTool = async (name, input) => {
     }
   }
 
-  if (name === "divide") {
+  if (name?.toLowerCase() === "divide") {
     try {
       return divide(input.a, input.b);
     } catch {
@@ -36,7 +36,7 @@ const executeTool = async (name, input) => {
     }
   }
 
-  if (name === "get_current_time") {
+  if (name?.toLowerCase() === "get_current_time") {
     try {
       return getCurrentTime();
     } catch {
@@ -44,7 +44,7 @@ const executeTool = async (name, input) => {
     }
   }
 
-  if (name === "search") {
+  if (name?.toLowerCase() === "search") {
     try {
       return await search(input.query);
     } catch {
@@ -52,7 +52,7 @@ const executeTool = async (name, input) => {
     }
   }
 
-  if (name === "Planning:break_into_subtasks") {
+  if (name?.toLowerCase() === "planning:break_into_subtasks") {
     try {
       return breakIntoSubtasks(input);
     } catch {
@@ -60,7 +60,7 @@ const executeTool = async (name, input) => {
     }
   }
 
-  if (name === "Planning:execute_subtask") {
+  if (name?.toLowerCase() === "planning:execute_subtask") {
     try {
       return await executeSubtask(input);
     } catch {
@@ -68,7 +68,7 @@ const executeTool = async (name, input) => {
     }
   }
 
-  if (name === "Planning:compile_report") {
+  if (name?.toLowerCase() === "planning:compile_report") {
     try {
       return await compileReport(input);
     } catch {

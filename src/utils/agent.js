@@ -6,11 +6,11 @@ import { logger } from "./logger.js";
 import { ROLES } from "./constants.js";
 import { executeTool, tools } from "../tools/index.js";
 import { memory } from "./memory.js";
+import Anthropic from "@anthropic-ai/sdk";
+import { appState } from "../state/index.js";
+import { confirm } from "@inquirer/prompts";
 
 config();
-
-const MODEL = process.env.OLLAMA_MODEL || "llama3.1";
-const SMALL_MODEL = process.env.OLLAMA_SMALL_MODEL || "qwen2.5:0.5b";
 
 const SYSTEM_PROMPT = `
   You are a function-first assistant. You NEVER compute, guess, or answer directly —
@@ -65,74 +65,167 @@ CALLING RULES
 `;
 
 const runAgent = async (userMessage, { maxRounds } = {}) => {
-  let keepRunning = true;
-  let rounds = 5; // Prevent infinite loops
+  if (appState.getSelectedAgent().id === "claude") {
+    let keepRunning = true;
+    let rounds = 5; // Prevent infinite loops
 
-  const messages = [
-    {
-      role: "system",
-      content: SYSTEM_PROMPT,
-    },
-    {
-      role: "user",
-      content: userMessage,
-    },
-  ];
+    const messages = [
+      {
+        role: "user",
+        content: userMessage,
+      },
+    ];
 
-  while (keepRunning) {
-    const response = await ollama.chat({
-      model: MODEL,
-      messages,
-      tools,
-    });
-
-    const message = response.message;
-
-    if (!message.tool_calls || message.tool_calls.length === 0) {
-      print(ROLES.AGENT, message.content);
-      return message.content;
-    }
-
-    messages.push(message);
-
-    for (const toolCall of message.tool_calls) {
-      logger.debug(
-        `Tool call: ${toolCall.function.name} with arguments ${JSON.stringify(toolCall.function.arguments)}`,
-      );
-      const { name, arguments: args } = toolCall.function;
-      print(ROLES.TOOL, `executing tool: ${name} with args: ${JSON.stringify(args)}`);
-
-      const result = await executeTool(name, args);
-
-      messages.push({
-        role: ROLES.TOOL,
-        content: String(result),
+    while (keepRunning) {
+      const response = await client.messages.create({
+        model: "claude-opus-4-8",
+        max_tokens: 1024,
+        system: [{ type: "text", text: SYSTEM_PROMPT }],
+        messages,
+        tools,
       });
-    }
-
-    rounds--;
-    if (rounds <= 0) {
-      print(
-        ROLES.SYSTEM,
-        "Maximum tool calls reached. Should end the conversation (y/n)?\n",
-      );
-      const answer = await new Promise((resolve) => {
-        const rl = readline.createInterface({
-          input: process.stdin,
-          output: process.stdout,
-        });
-        rl.question(
-          `${getColorBasedOnRole(ROLES.SYSTEM, "Your")} answer: `,
-          (input) => {
-            rl.close();
-            resolve(input.trim().toLowerCase());
-          },
+      print(JSON.stringify(response, null, 2));
+      if (!response.stop_reason === "end_turn") {
+        print(ROLES.AGENT, message.content);
+        let text = "";
+        for (const block of response.content) {
+          // if it is a text block appended if it's a tool execute the tool and append the result text.
+          if (block.type === "text") {
+            text += block.text;
+          }
+        }
+        return text;
+      } else if (response.stop_reason === "tool_use") {
+        // execute the tool and send the response back to the model as a tool response and continue the conversation.
+        const toolCalls = response.content.filter(
+          (block) => block.type === "tool_use",
         );
+        for (const toolCall of toolCalls) {
+          logger.debug(
+            `Tool call: ${toolCall.name} with arguments ${JSON.stringify(toolCall.input)}`,
+          );
+          const { id, name, input: args } = toolCall;
+          const result = await executeTool(name, args);
+          messages.push({
+            role: "user",
+            content: [
+              {
+                type: "tool_result",
+                tool_use_id: id,
+                content: String(result),
+              },
+            ],
+          });
+        }
+
+        console.log(response.content);
+      } else if (response.stop_reason === "max_tokens") {
+        print(
+          ROLES.SYSTEM,
+          "Maximum tokens reached for this response. Should continue the conversation (y/n)?\n",
+        );
+        return "Agent stopped by user after reaching maximum tokens.";
+      }
+
+      rounds--;
+      if (rounds <= 0) {
+        print(
+          ROLES.SYSTEM,
+          "Maximum tool calls reached. Should end the conversation (y/n)?\n",
+        );
+        const answer = await new Promise((resolve) => {
+          const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+          });
+          rl.question(
+            `${getColorBasedOnRole(ROLES.SYSTEM, "Your")} answer: `,
+            (input) => {
+              rl.close();
+              resolve(input.trim().toLowerCase());
+            },
+          );
+        });
+        if (answer === "y" || answer === "yes") {
+          return "Agent stopped by user after reaching maximum tool calls.";
+        } else {
+          rounds = 5;
+        }
+      }
+    }
+  } else {
+    let keepRunning = true;
+    let rounds = 5; // Prevent infinite loops
+
+    const messages = [
+      {
+        role: "system",
+        content: SYSTEM_PROMPT,
+      },
+      {
+        role: "user",
+        content: userMessage,
+      },
+    ];
+
+    while (keepRunning) {
+      const response = await ollama.chat({
+        model: MODEL,
+        messages,
+        tools,
       });
-      if (answer === "y" || answer === "yes") {
-        return "Agent stopped by user after reaching maximum tool calls.";
-      } else {
-        rounds = 5;
+
+      const message = response.message;
+
+      if (!message.tool_calls || message.tool_calls.length === 0) {
+        print(ROLES.AGENT, message.content);
+        return message.content;
+      }
+
+      messages.push(message);
+
+      for (const toolCall of message.tool_calls) {
+        logger.debug(
+          `Tool call: ${toolCall.function.name} with arguments ${JSON.stringify(toolCall.function.arguments)}`,
+        );
+        const { name, arguments: args } = toolCall.function;
+        print(
+          ROLES.TOOL,
+          `executing tool: ${name} with args: ${JSON.stringify(args)}`,
+        );
+
+        const result = await executeTool(name, args);
+
+        messages.push({
+          role: ROLES.TOOL,
+          content: String(result),
+        });
+      }
+
+      rounds--;
+      if (rounds <= 0) {
+        print(
+          ROLES.SYSTEM,
+          "Maximum tool calls reached. Should end the conversation (y/n)?\n",
+        );
+        const answer = await new Promise((resolve) => {
+          const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+          });
+          rl.question(
+            `${getColorBasedOnRole(ROLES.SYSTEM, "Your")} answer: `,
+            (input) => {
+              rl.close();
+              resolve(input.trim().toLowerCase());
+            },
+          );
+        });
+        if (answer === "y" || answer === "yes") {
+          return "Agent stopped by user after reaching maximum tool calls.";
+        } else {
+          rounds = 5;
+        }
       }
     }
   }
@@ -174,7 +267,10 @@ const runTaskAgent = async (task, { maxRounds } = {}) => {
         `Tool call: ${toolCall.function.name} with arguments ${JSON.stringify(toolCall.function.arguments)}`,
       );
       const { name, arguments: args } = toolCall.function;
-      print(ROLES.TOOL, `executing tool: ${name} with args: ${JSON.stringify(args)}`);
+      print(
+        ROLES.TOOL,
+        `executing tool: ${name} with args: ${JSON.stringify(args)}`,
+      );
 
       const result = await executeTool(name, args);
 
@@ -201,4 +297,169 @@ const thinking = (message) => {
   print(ROLES.AGENT, `Thinking:  ${message}`);
 };
 
-export { runAgent, runTaskAgent };
+const MODELS = [
+  {
+    id: "claude",
+    name: "Claude",
+    description:
+      "A helpful assistant that can perform calculations and answer questions.",
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    run: async (input) => {
+      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      let keepRunning = true;
+      let rounds = 5; // Prevent infinite loops
+
+      const messages = [
+        {
+          role: "user",
+          content: input,
+        },
+      ];
+      console.log("agent is running with a user message", input);
+
+      // while (keepRunning) {
+      //   const response = await client.messages.create({
+      //     model: "claude-opus-4-8",
+      //     max_tokens: 1024,
+      //     system: [{ type: "text", text: SYSTEM_PROMPT }],
+      //     messages,
+      //     tools,
+      //   });
+
+      //   if (!response.stop_reason === "end_turn") {
+      //     print(ROLES.AGENT, message.content);
+      //     let text = "";
+      //     for (const block of response.content) {
+      //       // if it is a text block appended if it's a tool execute the tool and append the result text.
+      //       if (block.type === "text") {
+      //         text += block.text;
+      //       }
+      //     }
+      //     return text;
+      //   } else if (response.stop_reason === "tool_use") {
+      //     // execute the tool and send the response back to the model as a tool response and continue the conversation.
+      //     const toolCalls = response.content.filter(
+      //       (block) => block.type === "tool_use",
+      //     );
+      //     for (const toolCall of toolCalls) {
+      //       logger.debug(
+      //         `Tool call: ${toolCall.name} with arguments ${JSON.stringify(toolCall.input)}`,
+      //       );
+      //       const { id, name, input: args } = toolCall;
+      //       const result = await executeTool(name, args);
+      //       messages.push({
+      //         role: "user",
+      //         content: [
+      //           {
+      //             type: "tool_result",
+      //             tool_use_id: id,
+      //             content: String(result),
+      //           },
+      //         ],
+      //       });
+      //     }
+
+      //     console.log(response.content);
+      //   } else if (response.stop_reason === "max_tokens") {
+      //     print(
+      //       ROLES.SYSTEM,
+      //       "Maximum tokens reached for this response. Should continue the conversation (y/n)?\n",
+      //     );
+      //     return "Agent stopped by user after reaching maximum tokens.";
+      //   }
+      // }
+    },
+  },
+  {
+    id: "llama3.1",
+    name: "LLaMA 3.1",
+    description:
+      "A versatile model that can handle a wide range of tasks with good performance.",
+    run: async (input) => {},
+  },
+  {
+    id: "gemma4:e2b",
+    name: "Gemma 4 (2B)",
+    description:
+      "A powerful model that can handle complex tasks and provide detailed responses.",
+    run: async (input) => {
+      let keepRunning = true;
+      let rounds = 5; // Prevent infinite loops
+
+      const messages = [
+        {
+          role: "system",
+          content: SYSTEM_PROMPT,
+        },
+        {
+          role: "user",
+          content: input,
+        },
+      ];
+
+      while (keepRunning) {
+        const response = await ollama.chat({
+          model: "gemma4:e2b",
+          messages,
+          tools,
+        });
+
+        const message = response.message;
+
+        if (!message.tool_calls || message.tool_calls.length === 0) {
+          print(ROLES.AGENT, message.content);
+          return message.content;
+        }
+
+        messages.push(message);
+
+        for (const toolCall of message.tool_calls) {
+          logger.debug(
+            `Tool call: ${toolCall.function.name} with arguments ${JSON.stringify(toolCall.function.arguments)}`,
+          );
+          const { name, arguments: args } = toolCall.function;
+          print(
+            ROLES.TOOL,
+            `executing tool: ${name} with args: ${JSON.stringify(args)}`,
+          );
+
+          const result = await executeTool(name, args);
+
+          messages.push({
+            role: ROLES.TOOL,
+            content: String(result),
+          });
+        }
+
+        rounds--;
+        if (rounds <= 0) {
+          print(
+            ROLES.SYSTEM,
+            "Maximum tool calls reached. Should end the conversation (y/n)?\n",
+          );
+          const answer = await confirm({
+            message: getTextWithRole(
+              ROLES.SYSTEM,
+              "Maximum tool calls reached. End conversation?",
+            ),
+            default: "y/n",
+          });
+          if (answer === "y" || answer === "yes") {
+            return "Agent stopped by user after reaching maximum tool calls.";
+          } else {
+            rounds = 5;
+          }
+        }
+      }
+    },
+  },
+  {
+    id: "qwen2.5:0.5b",
+    name: "Qwen 2.5 (0.5B)",
+    description:
+      "A smaller, faster model that is ideal for simple tasks and quick responses.",
+  },
+];
+
+export { runAgent, runTaskAgent, MODELS };

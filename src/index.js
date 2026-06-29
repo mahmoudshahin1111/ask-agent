@@ -1,6 +1,16 @@
 import readline from "readline";
 import { config } from "dotenv";
-import { print, logger, getColorBasedOnRole, runAgent, memory } from "./utils/index.js";
+import {
+  print,
+  logger,
+  getColorBasedOnRole,
+  runAgent,
+  memory,
+  getTextWithRole,
+} from "./utils/index.js";
+import { appState } from "./state/index.js";
+import { input, select } from "@inquirer/prompts";
+import { MODELS, ROLES } from "./utils/index.js";
 
 config();
 
@@ -8,19 +18,57 @@ const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
-const ask = () =>
-  rl.question(`${getColorBasedOnRole("user", "You")}: `, async (input) => {
-    if (input.toLowerCase() === "/bye") {
-      rl.close();
-      return;
+
+async function startChat() {
+  const agent = appState.getSelectedAgent();
+  console.log(`\nChatting with ${agent.name}. Type "exit" to quit.\n`);
+  print(
+    ROLES.SYSTEM,
+    `You are now chatting with ${agent.name}. How can I assist you today?`,
+  );
+
+  while (true) {
+    const userMessage = await input({
+      required: true,
+      message: getTextWithRole(ROLES.USER, "Your message:"),
+    });
+
+    if (userMessage.toLowerCase() === "exit") {
+      console.log("Goodbye!");
+      break;
     }
-    memory.reset(); // Clear memory for each new question
-    await runAgent(input);
-    ask();
+    memory.reset();
+    const response = await agent.run(userMessage);
+    print(ROLES.AGENT, response);
+  }
+}
+
+const selectAgent = async () => {
+  const agentId = await select({
+    message: "Select an AI agent",
+    choices: appState.getAgents().map((agent) => ({
+      name: agent.name,
+      value: agent.id,
+    })),
   });
 
-print(
-  "system",
-  "Welcome to Ask Agent, your function-first calculator assistant, let's get started or type /bye to exit. \n",
-);
-ask();
+  appState.selectAgent(agentId);
+
+  const agent = appState.getSelectedAgent();
+  if (!agent.apiKey) {
+    const apiKey = await input({
+      required: true,
+      message: `Enter API key for ${agent.name}:`,
+    });
+    appState.setSelectedAgentApiKey(apiKey);
+  }
+
+  console.log(`Started chat with: ${appState.getSelectedAgent().name}`);
+};
+
+// initialize the app state with available agents and select the default agent
+appState.setAgents(MODELS);
+//
+selectAgent().then(async () => {
+  await startChat();
+});

@@ -78,9 +78,9 @@ const tools = [
   },
   // task breakdown tool
   {
-    name: "Planning:break_into_subtasks",
+    name: "break_into_subtasks",
     description:
-      "Break a big goal into 3-5 clear, actionable subtasks. ALWAYS call this first.",
+      "Break a big goal into 3-5 clear, actionable subtasks. Always call this first.",
     input_schema: {
       type: "object",
       properties: {
@@ -88,32 +88,31 @@ const tools = [
         subtasks: {
           type: "array",
           items: { type: "string" },
-          description: "List of subtasks to execute in order",
+          description: "List of subtasks to execute",
         },
       },
       required: ["goal", "subtasks"],
     },
   },
   {
-    name: "Planning:execute_subtask",
-    description:
-      "Execute a single subtask and return the result. Call once per subtask.",
+    name: "execute_subtask",
+    description: "Execute a single subtask and return the result.",
     input_schema: {
       type: "object",
       properties: {
         subtask: { type: "string" },
         context: {
           type: "string",
-          description: "Relevant output from previous subtasks",
+          description: "Anything relevant from previous steps",
         },
       },
       required: ["subtask"],
     },
   },
   {
-    name: "Planning:compile_report",
+    name: "compile_report",
     description:
-      "Compile all results into a final structured report. ALWAYS call this last.",
+      "Compile all subtask results into a final structured report. Call this last.",
     input_schema: {
       type: "object",
       properties: {
