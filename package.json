@@ -1,6 +1,6 @@
 {
   "name": "ask-agent",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "A command-line AI agent that takes your question, reasons about which tool to use, executes it, and returns a clean answer all in one command.",
   "keywords": [

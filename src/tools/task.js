@@ -5,8 +5,11 @@ import { memory } from "../utils/index.js";
 const breakIntoSubtasks = (input) => {
   memory.setGoal(input.goal);
   memory.addSubtasks(input.subtasks);
-  print(ROLES.AGENT, `\n📋 Subtasks:`);
-  input.subtasks.forEach((t, i) => print(ROLES.AGENT, `   ${i + 1}. ${t}`));
+  let subtaskList = "\n📋 Subtasks: \n";
+  input.subtasks.forEach((t, i) => {
+    subtaskList += `   ${i + 1}. ${t}\n`;
+  });
+  print(ROLES.AGENT, subtaskList);
   return `Subtasks registered: ${input.subtasks.join(" | ")}`;
 };
 

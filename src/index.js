@@ -10,28 +10,6 @@ import { MODELS, ROLES } from "./utils/index.js";
 
 config();
 
-const SPINNER_FRAMES = ["|", "/", "-", "\\"];
-const SPINNER_INTERVAL_MS = 80;
-
-const startLoadingSpinner = (message) => {
-  if (!process.stdout.isTTY) {
-    return () => {};
-  }
-
-  let frameIndex = 0;
-  process.stdout.write(`\r${SPINNER_FRAMES[frameIndex]} ${message}`);
-
-  const timer = setInterval(() => {
-    frameIndex = (frameIndex + 1) % SPINNER_FRAMES.length;
-    process.stdout.write(`\r${SPINNER_FRAMES[frameIndex]} ${message}`);
-  }, SPINNER_INTERVAL_MS);
-
-  return () => {
-    clearInterval(timer);
-    process.stdout.write("\r\x1b[K");
-  };
-};
-
 async function startChat() {
   const agent = appState.getSelectedAgent();
   console.log(`\nChatting with ${agent.name}. Type "exit" to quit.\n`);
@@ -45,8 +23,7 @@ async function startChat() {
       {
         required: true,
         message: getTextWithRole(ROLES.USER, "Your message:"),
-      },
-      { clearPromptOnDone: true },
+      }
     );
 
     if (userMessage.toLowerCase() === "exit") {
@@ -55,14 +32,7 @@ async function startChat() {
     }
 
     memory.reset();
-    const stopSpinner = startLoadingSpinner(`${agent.name} is thinking...`);
-    let response;
-
-    try {
-      response = await agent.run(userMessage);
-    } finally {
-      stopSpinner();
-    }
+    const response = await agent.run(userMessage);
 
     print(ROLES.AGENT, response);
   }

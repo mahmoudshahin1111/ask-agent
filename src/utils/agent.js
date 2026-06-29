@@ -2,7 +2,11 @@ import ollama from "ollama";
 import { config } from "dotenv";
 import Anthropic from "@anthropic-ai/sdk";
 import { confirm } from "@inquirer/prompts";
-import { print, getTextWithRole } from "./print.js";
+import {
+  print,
+  getTextWithRole,
+  startLoadingSpinner,
+} from "./print.js";
 import { logger } from "./logger.js";
 import { ROLES } from "./constants.js";
 import { executeTool, tools } from "../tools/index.js";
@@ -72,6 +76,16 @@ const extractTextBlocks = (contentBlocks = []) => {
     .trim();
 };
 
+const withLoadingSpinner = async (message, operation) => {
+  const stopSpinner = startLoadingSpinner(message);
+
+  try {
+    return await operation();
+  } finally {
+    stopSpinner();
+  }
+};
+
 const executeToolWithFallback = async (toolName, args) => {
   const result = await executeTool(toolName, args);
   if (result !== "Tool not found") return result;
@@ -116,11 +130,15 @@ const runOllamaFlow = async (
   let roundsLeft = maxRounds;
 
   while (true) {
-    const response = await ollama.chat({
-      model,
-      messages,
-      tools,
-    });
+    const response = await withLoadingSpinner(
+      `${model} is thinking...`,
+      () =>
+        ollama.chat({
+          model,
+          messages,
+          tools,
+        }),
+    );
 
     const message = response.message;
 
@@ -184,13 +202,17 @@ const runClaudeFlow = async (
   let roundsLeft = maxRounds;
 
   while (true) {
-    const response = await client.messages.create({
-      model,
-      max_tokens: 1024,
-      system: [{ type: "text", text: systemPrompt }],
-      messages,
-      tools,
-    });
+    const response = await withLoadingSpinner(
+      `${model} is thinking...`,
+      () =>
+        client.messages.create({
+          model,
+          max_tokens: 1024,
+          system: [{ type: "text", text: systemPrompt }],
+          messages,
+          tools,
+        }),
+    );
 
     if (response.stop_reason === "tool_use") {
       const toolCalls = response.content.filter(
