@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import {
   print,
   memory,
+  getColorBasedOnRole,
   getTextWithRole,
 } from "./utils/index.js";
 import { appState } from "./state/index.js";
@@ -22,8 +23,12 @@ async function startChat() {
     const userMessage = await input(
       {
         required: true,
-        message: getTextWithRole(ROLES.USER, "Your message:"),
-      }
+        message: getTextWithRole(ROLES.USER),
+        theme: {
+          prefix: "",
+        },
+      },
+      { clearPromptOnDone: true },
     );
 
     if (userMessage.toLowerCase() === "exit") {
@@ -64,9 +69,8 @@ const selectAgent = async () => {
   console.log(`Started chat with: ${appState.getSelectedAgent().name}`);
 };
 
-// initialize the app state with available agents and select the default agent
 appState.setAgents(MODELS);
-//
+
 selectAgent().then(async () => {
   await startChat();
 });

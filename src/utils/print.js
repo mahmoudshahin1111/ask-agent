@@ -17,7 +17,7 @@ const print = (role, content) => {
 };
 
 const getTextWithRole = (role, content) => {
-  return `${getColorBasedOnRole(role, getRoleLabel(role))}: ${content}`;
+  return `${getColorBasedOnRole(role, getRoleLabel(role))}: ${content ?? ""}`;
 };
 
 const getColorBasedOnRole = (role, content) => {

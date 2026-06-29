@@ -1,6 +1,7 @@
 import { logger, print, ROLES } from "../utils/index.js";
 import { runTaskAgent} from "../utils/index.js";
 import { memory } from "../utils/index.js";
+import { confirm } from "@inquirer/prompts";
 
 const breakIntoSubtasks = (input) => {
   memory.setGoal(input.goal);
@@ -15,6 +16,17 @@ const breakIntoSubtasks = (input) => {
 
 const executeSubtask = async (input) => {
   print(ROLES.AGENT, `\n⚙️  Executing: ${input.subtask}`);
+
+  const shouldExecute = await confirm({
+    message: `Execute this subtask now?\n${input.subtask}`,
+    default: true,
+  });
+
+  if (!shouldExecute) {
+    memory.reset();
+    return "User declined subtask execution. Stop executing subtasks, call compile_report immediately, and finish the task flow.";
+  }
+
   const { subtask, context } = input;
   const response = await runTaskAgent(
     `Complete this task concisely and clearly:\n\nTask: ${subtask}\n\nContext from previous steps: ${context || "none"}`,
@@ -29,6 +41,11 @@ const executeSubtask = async (input) => {
 
 const compileReport = async (input) => {
   const report = memory.getSummary();
+
+  if (!report.trim()) {
+    return "\n📊 Final Report:\nNo subtasks were executed. Workflow was stopped by user request.";
+  }
+
   return `\n📊 Final Report:\n${report}`;
 };
 
