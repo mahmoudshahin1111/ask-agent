@@ -1,4 +1,10 @@
 class AppState {
+  constructor() {
+    this.agents = [];
+    this.selectedAgent = null;
+    this.selectedAgentApiKey = null;
+  }
+
   setAgents(agents) {
     this.agents = agents;
     this.selectedAgent = null;
