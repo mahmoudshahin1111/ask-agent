@@ -46,4 +46,4 @@ class AppState {
   }
 }
 
-export {AppState}
+export { AppState };
