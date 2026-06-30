@@ -31,7 +31,7 @@ class AppState {
   }
 
   hasSelectedAgent() {
-    return this.selectedAgent !== null;
+    return this.selectedAgent != null;
   }
 
   clearSelectedAgent() {
