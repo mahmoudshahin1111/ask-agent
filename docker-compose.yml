@@ -2,7 +2,7 @@ services:
   ollama:
     build:
       tags:
-        - ollama:v1.0
+        - ollama:v2.0
       context: .
       args:
         OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1}
@@ -13,9 +13,6 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - ./ollama-data:/root/.ollama
     stdin_open: true
     tty: true
-
-volumes:
-  ollama_data:
