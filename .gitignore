@@ -11,7 +11,7 @@ logs/
 
 # Ollama local data
 .ollama/
-ollama_data/
+ollama-data/
 
 # OS
 .DS_Store

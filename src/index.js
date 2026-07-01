@@ -1,128 +1,70 @@
-import ollama from "ollama";
-import { tools, executeTool } from "./tools/index.js";
-import readline from "readline";
 import { config } from "dotenv";
-import { print, logger, getColorBasedOnRole } from "./utils/index.js";
+import { print, memory, getTextWithRole, MODELS, ROLES } from "./utils/index.js";
+import { appState } from "./state/index.js";
+import { input, select } from "@inquirer/prompts";
 
 config();
 
-const MODEL = process.env.OLLAMA_MODEL || "llama3.1";
+async function startChat() {
+  const agent = appState.getSelectedAgent();
+  console.log(`\nChatting with ${agent.name}. Type "exit" to quit.\n`);
+  print(
+    ROLES.SYSTEM,
+    `You are now chatting with ${agent.name}. How can I assist you today?`,
+  );
 
-const SYSTEM_PROMPT = `
-You are a function-first assistant. You answer requests by calling tools — never by computing or guessing results yourself.
+  while (true) {
+    const userMessage = await input(
+      {
+        required: true,
+        message: getTextWithRole(ROLES.USER),
+        theme: {
+          prefix: "",
+        },
+      },
+      { clearPromptOnDone: true },
+    );
 
-Available tools:
-- add: plus (+), sum, add
-- subtract: minus (-), subtract, difference
-- multiply: times (*, x), multiply, product
-- divide: divide (/), quotient
-- get_current_time: current time, what time is it
-- search: search the web for relevant information
-
-Rules:
-1. Always call the appropriate tool instead of answering directly.
-2. You may call multiple tools in a single response when the user asks for more than one operation, for example: "add 2+3 and multiply 4*5" should call both add and multiply.
-3. Call tools in parallel whenever their inputs are independent of each other.
-4. Only call a tool sequentially (one after another) when the output of one is needed as input to the next, for example: "add 2+3 then multiply the result by 4".
-5. For math tools, extract exactly two numeric inputs and pass them as {"a": number, "b": number}.
-6. For get_current_time, pass no inputs.
-7. If inputs are missing or unclear, ask a short clarification question instead of guessing.
-8. If division by zero is requested, call divide anyway and report the tool error clearly.
-9. Keep responses concise.
-10. Always use the exact tool names when calling tools, never synonyms or variations.
-11. For the search tool, extract the query and pass it as {"query": string}.
-
-`;
-
-const messages = [
-  {
-    role: "system",
-    content: SYSTEM_PROMPT,
-  },
-];
-
-async function runAgent(userMessage) {
-  let keepRunning = true;
-  let maxRounds = 5; // Prevent infinite loops
-
-  messages.push({
-    role: "user",
-    content: userMessage,
-  });
-
-  while (keepRunning) {
-    const response = await ollama.chat({
-      model: MODEL,
-      messages,
-      tools,
-    });
-
-    const message = response.message;
-
-    if (!message.tool_calls || message.tool_calls.length === 0) {
-      print("agent", message.content);
+    if (userMessage.toLowerCase() === "exit") {
+      console.log("Goodbye!");
       break;
     }
 
-    messages.push(message);
+    memory.reset();
+    const response = await agent.run(userMessage);
 
-    for (const toolCall of message.tool_calls) {
-      logger.debug(`Tool call: ${toolCall.function.name} with arguments ${JSON.stringify(toolCall.function.arguments)}`);
-      const { name, arguments: args } = toolCall.function;
-      print("tool", `${name}`);
-
-      const result = await executeTool(name, args);
-
-      messages.push({
-        role: "tool",
-        content: String(result),
-      });
-    }
-
-    maxRounds--;
-    if (maxRounds <= 0) {
-      print(
-        "system",
-        "Maximum tool calls reached. Should end the conversation (y/n)?\n",
-      );
-      const answer = await new Promise((resolve) => {
-        const rl = readline.createInterface({
-          input: process.stdin,
-          output: process.stdout,
-        });
-        rl.question(
-          `${getColorBasedOnRole("system", "Your")} answer: `,
-          (input) => {
-            rl.close();
-            resolve(input.trim().toLowerCase());
-          },
-        );
-      });
-      if (answer === "y" || answer === "yes") {
-        keepRunning = false;
-      } else {
-        maxRounds = 5; // Reset the counter if the user wants to continue
-      }
-    }
+    print(ROLES.AGENT, response);
   }
 }
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-const ask = () =>
-  rl.question(`${getColorBasedOnRole("user", "You")}: `, async (input) => {
-    if (input.toLowerCase() === "/bye") {
-      rl.close();
-      return;
-    }
-    await runAgent(input);
-    ask();
+const selectAgent = async () => {
+  const agentId = await select({
+    message: "Select an AI agent",
+    choices: appState.getAgents().map((agent) => ({
+      name: agent.name,
+      value: agent.id,
+    })),
   });
 
-print(
-  "system",
-  "Welcome to Ask Agent, your function-first calculator assistant, let's get started or type /bye to exit. \n",
-);
-ask();
+  appState.selectAgent(agentId);
+
+  const agent = appState.getSelectedAgent();
+  if (agent.requiresApiKey && !appState.getSelectedAgentApiKey()) {
+    const apiKey = await input(
+      {
+        required: true,
+        message: `Enter API key for ${agent.name}:`,
+      },
+      { clearPromptOnDone: true },
+    );
+    appState.setSelectedAgentApiKey(apiKey);
+  }
+
+  console.log(`Started chat with: ${appState.getSelectedAgent().name}`);
+};
+
+appState.setAgents(MODELS);
+
+selectAgent().then(async () => {
+  await startChat();
+});

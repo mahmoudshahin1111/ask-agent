@@ -73,3 +73,17 @@ npm test
 
 - Do not commit real secrets.
 - Keep tool contracts in src/tools/index.js aligned with src/tools/calculator.js.
+
+## Change Log
+
+### v1.0.0
+
+- Initial release of the ASK CLI agent.
+- Provided calculator, search, datetime, and task execution tools.
+- Supported function-first responses through the CLI interface.
+
+### v2.0.0
+
+- Added explicit Claude and native Llama agent modes.
+- Centralized console formatting and loading spinner helpers in the print utilities.
+- Improved task execution flow and prompt handling for the CLI.

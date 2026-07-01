@@ -1,18 +1,23 @@
 import { ROLES } from "./constants.js";
 
-const print = (role, content) => {
-  let roleLabel = "";
-  if (role === ROLES.USER) {
-    roleLabel = "User";
-  } else if (role === ROLES.AGENT) {
-    roleLabel = "Agent";
-  } else if (role === ROLES.TOOL) {
-    roleLabel = "Tool Call";
-  } else if (role === ROLES.SYSTEM) {
-    roleLabel = "System";
-  }
+const ROLE_LABELS = {
+  [ROLES.USER]: "User",
+  [ROLES.AGENT]: "Agent",
+  [ROLES.TOOL]: "Tool Call",
+  [ROLES.SYSTEM]: "System",
+};
 
-  console.log(`${getColorBasedOnRole(role, roleLabel)}: ${content}\n`);
+const SPINNER_FRAMES = ["|", "/", "-", "\\"];
+const SPINNER_INTERVAL_MS = 80;
+
+const getRoleLabel = (role) => ROLE_LABELS[role] || "Unknown";
+
+const print = (role, content) => {
+  console.log(`${getTextWithRole(role, content)}\n`);
+};
+
+const getTextWithRole = (role, content) => {
+  return `${getColorBasedOnRole(role, getRoleLabel(role))}: ${content ?? ""}`;
 };
 
 const getColorBasedOnRole = (role, content) => {
@@ -37,7 +42,39 @@ const getColorBasedOnRole = (role, content) => {
   return `${colorCode}${content}${reset}`;
 };
 
-export  {
-    print,
-    getColorBasedOnRole
-}
+const startLoadingSpinner = (message) => {
+  if (!process.stdout.isTTY) {
+    return () => {};
+  }
+
+  let frameIndex = 0;
+  process.stdout.write(`\r${SPINNER_FRAMES[frameIndex]} ${message}`);
+
+  const timer = setInterval(() => {
+    frameIndex = (frameIndex + 1) % SPINNER_FRAMES.length;
+    process.stdout.write(`\r${SPINNER_FRAMES[frameIndex]} ${message}`);
+  }, SPINNER_INTERVAL_MS);
+
+  return () => {
+    clearInterval(timer);
+    process.stdout.write("\r\x1b[K");
+  };
+};
+
+const executeOperation = async (message, operation) => {
+  const stopSpinner = startLoadingSpinner(message);
+
+  try {
+    return await operation();
+  } finally {
+    stopSpinner();
+  }
+};
+
+export {
+  print,
+  getColorBasedOnRole,
+  getTextWithRole,
+  startLoadingSpinner,
+  executeOperation,
+};
