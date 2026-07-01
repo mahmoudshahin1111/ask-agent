@@ -1,9 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("./search.js", () => ({ search: vi.fn() }));
+vi.mock("./task.js", () => ({
+  breakIntoSubtasks: vi.fn(),
+  executeSubtask: vi.fn(),
+  compileReport: vi.fn(),
+}));
 
 import { tools, executeTool } from "./index.js";
 import { search } from "./search.js";
+import {
+  breakIntoSubtasks,
+  executeSubtask,
+  compileReport,
+} from "./task.js";
 
 describe("tools registry", () => {
   const toolNames = tools.map((t) => t.name);
@@ -14,6 +24,9 @@ describe("tools registry", () => {
     expect(toolNames).toContain("multiply");
     expect(toolNames).toContain("divide");
     expect(toolNames).toContain("get_current_time");
+    expect(toolNames).toContain("break_into_subtasks");
+    expect(toolNames).toContain("execute_subtask");
+    expect(toolNames).toContain("compile_report");
   });
 
   it("every tool has a non-empty name, description, and input_schema", () => {
@@ -42,6 +55,21 @@ describe("tools registry", () => {
     expect(searchTool).toBeDefined();
     expect(searchTool.description).toContain("Search the web using Tavily.");
     expect(searchTool.input_schema.required).toContain("query");
+  });
+
+  it("planning tools expose the expected required inputs", () => {
+    const breakIntoSubtasksTool = tools.find(
+      (t) => t.name === "break_into_subtasks",
+    );
+    const executeSubtaskTool = tools.find((t) => t.name === "execute_subtask");
+    const compileReportTool = tools.find((t) => t.name === "compile_report");
+
+    expect(breakIntoSubtasksTool.input_schema.required).toEqual([
+      "goal",
+      "subtasks",
+    ]);
+    expect(executeSubtaskTool.input_schema.required).toEqual(["subtask"]);
+    expect(compileReportTool.input_schema.required).toEqual(["title"]);
   });
 });
 
@@ -107,6 +135,42 @@ describe("executeTool", () => {
       const result = await executeTool("search", input);
       expect(search).toHaveBeenCalledWith("test query");
       expect(result).toBe("search results");
+    });
+  });
+
+  describe("planning tools", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("routes break_into_subtasks through the planning fallback", async () => {
+      const input = { goal: "Ship release", subtasks: ["Test", "Deploy"] };
+      breakIntoSubtasks.mockReturnValue("Subtasks registered: Test | Deploy");
+
+      const result = await executeTool("break_into_subtasks", input);
+
+      expect(breakIntoSubtasks).toHaveBeenCalledWith(input);
+      expect(result).toBe("Subtasks registered: Test | Deploy");
+    });
+
+    it("routes execute_subtask through the planning fallback", async () => {
+      const input = { subtask: "Run tests", context: "none" };
+      executeSubtask.mockResolvedValue("Tests passed");
+
+      const result = await executeTool("execute_subtask", input);
+
+      expect(executeSubtask).toHaveBeenCalledWith(input);
+      expect(result).toBe("Tests passed");
+    });
+
+    it("routes compile_report through the planning fallback", async () => {
+      const input = { title: "Release report" };
+      compileReport.mockResolvedValue("Final report");
+
+      const result = await executeTool("compile_report", input);
+
+      expect(compileReport).toHaveBeenCalledWith(input);
+      expect(result).toBe("Final report");
     });
   });
 
