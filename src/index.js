@@ -1,13 +1,7 @@
 import { config } from "dotenv";
-import {
-  print,
-  memory,
-  getColorBasedOnRole,
-  getTextWithRole,
-} from "./utils/index.js";
+import { print, memory, getTextWithRole, MODELS, ROLES } from "./utils/index.js";
 import { appState } from "./state/index.js";
 import { input, select } from "@inquirer/prompts";
-import { MODELS, ROLES } from "./utils/index.js";
 
 config();
 
