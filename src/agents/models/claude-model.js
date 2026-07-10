@@ -7,6 +7,15 @@ import { askToContinueAfterLimit } from "../utils/round-limit.js";
 import { executeTool, tools } from "../../tools/index.js";
 
 const DEFAULT_CLAUDE_MODEL = "claude-opus-4-8";
+const PLANNING_TOOL_NAMES = new Set([
+  "break_into_subtasks",
+  "execute_subtask",
+  "compile_report",
+]);
+
+const getTaskExecuterTools = () => {
+  return tools.filter((tool) => !PLANNING_TOOL_NAMES.has(tool.name));
+};
 
 const extractTextBlocks = (contentBlocks = []) => {
   return contentBlocks
@@ -32,6 +41,7 @@ const runClaudeFlow = async (
     maxRounds,
     systemPrompt,
     defaultMaxRounds,
+    availableTools = tools,
   },
 ) => {
   const client = getAnthropicClient(apiKey);
@@ -51,7 +61,7 @@ const runClaudeFlow = async (
         max_tokens: 1024,
         system: [{ type: "text", text: systemPrompt }],
         messages,
-        tools,
+        tools: availableTools,
       }),
     );
 
@@ -112,6 +122,7 @@ const createClaudeModel = ({
   getApiKey,
   systemPrompt,
   taskSystemPrompt,
+  taskExecuterSystemPrompt,
   defaultModel = DEFAULT_CLAUDE_MODEL,
   defaultMaxRounds,
 }) => {
@@ -139,6 +150,16 @@ const createClaudeModel = ({
         maxRounds: options.maxRounds,
         systemPrompt: taskSystemPrompt,
         defaultMaxRounds,
+      });
+    },
+    runTaskExecuter: async (task, options = {}) => {
+      return runClaudeFlow(task, {
+        apiKey: getApiKey(),
+        model: options.model || defaultModel,
+        maxRounds: options.maxRounds,
+        systemPrompt: taskExecuterSystemPrompt,
+        defaultMaxRounds,
+        availableTools: getTaskExecuterTools(),
       });
     },
   };

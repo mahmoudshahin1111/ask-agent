@@ -48,6 +48,18 @@ For complex tasks, always use planning tools in this order:
 Keep each step concise and accurate.
 `;
 
+const TASK_EXECUTER_SYSTEM_PROMPT = `
+You are a task executer.
+Execute the user task directly using ONLY the tools provided to you in this session.
+
+STRICT RULES
+1) Do not use planning workflow tools.
+2) Do not invent or assume tool names that were not provided.
+3) If a required capability is missing from the available tools, stop immediately and ask the user whether to continue without it.
+4) In that stop message, include the exact missing tool name you need.
+5) Keep execution output concise and accurate.
+`;
+
 const runAgent = async (userMessage, options = {}) => {
   const selectedAgent = appState.getSelectedAgent();
   if (!selectedAgent || typeof selectedAgent.run !== "function") {
@@ -65,6 +77,10 @@ const runTaskAgent = async (task, options = {}) => {
     throw new Error("No agent selected for task execution.");
   }
 
+  if (typeof selectedAgent.runTaskExecuter === "function") {
+    return selectedAgent.runTaskExecuter(task, options);
+  }
+
   if (typeof selectedAgent.runTask === "function") {
     return selectedAgent.runTask(task, options);
   }
@@ -79,6 +95,7 @@ const MODELS = [
       appState.getSelectedAgentApiKey?.() || process.env.ANTHROPIC_API_KEY,
     systemPrompt: SYSTEM_PROMPT,
     taskSystemPrompt: TASK_SYSTEM_PROMPT,
+    taskExecuterSystemPrompt: TASK_EXECUTER_SYSTEM_PROMPT,
     defaultModel: DEFAULT_CLAUDE_MODEL,
     defaultMaxRounds: DEFAULT_MAX_ROUNDS,
   }),
